@@ -1,6 +1,7 @@
+import { OcrResult, RecommendResult, RecommendationItem } from './types';
+
 import axios from 'axios';
 import dotenv from 'dotenv';
-// src/server.ts
 import express from 'express';
 import fs from 'fs';
 import multer from 'multer';
@@ -11,7 +12,7 @@ dotenv.config();
 
 // Express アプリケーションの初期化
 const app = express();
-const PORT = process.env.PORT || 5000; // 3000から5000に変更
+const PORT = process.env.PORT || 5000;
 
 // アップロードディレクトリの設定
 const UPLOAD_DIR = path.join(__dirname, '../uploads');
@@ -62,7 +63,7 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
     
     // レスポンスのフォーマットを調整
     const formattedResult = {
-      items: recommendations.recommendations.map(item => ({
+      items: recommendations.recommendations.map((item: RecommendationItem) => ({
         name: item.name,
         description: item.description,
         reason: item.reason
@@ -77,6 +78,11 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
     
   } catch (error) {
     console.error('処理エラー:', error);
+    // エラーの詳細を出力
+    if (error instanceof Error) {
+      console.error('エラーメッセージ:', error.message);
+      console.error('エラースタック:', error.stack);
+    }
     return res.status(500).json({ 
       error: '処理中にエラーが発生しました' 
     });
@@ -111,12 +117,17 @@ async function processOCR(imagePath: string): Promise<string> {
     
   } catch (error) {
     console.error('OCRエラー:', error);
+    // エラーの詳細を出力
+    if (error instanceof Error) {
+      console.error('OCRエラーメッセージ:', error.message);
+      console.error('OCRエラースタック:', error.stack);
+    }
     throw new Error('OCR処理中にエラーが発生しました');
   }
 }
 
 // おすすめ取得関数
-async function getRecommendations(ocrText: string) {
+async function getRecommendations(ocrText: string): Promise<RecommendResult> {
   try {
     // LLMサービスのおすすめAPIへのリクエスト
     const response = await axios.post(
@@ -135,10 +146,15 @@ async function getRecommendations(ocrText: string) {
       throw new Error('おすすめ取得に失敗しました');
     }
     
-    return response.data;
+    return response.data as RecommendResult;
     
   } catch (error) {
     console.error('おすすめ取得エラー:', error);
+    // エラーの詳細を出力
+    if (error instanceof Error) {
+      console.error('おすすめエラーメッセージ:', error.message);
+      console.error('おすすめエラースタック:', error.stack);
+    }
     throw new Error('おすすめ取得中にエラーが発生しました');
   }
 }
