@@ -148,28 +148,42 @@ async function generateRecommendationsWithDeepseek(menuText: string): Promise<Re
       messages: [
         { 
           role: "system", 
-          content: "あなたは日本語で応答するAIアシスタントです。提供されたメニューから最適なおすすめを提案します。" 
+          content: `あなたは日本語で応答するAIアシスタントです。提供されたメニューから最適なおすすめを提案します。
+必ずJSON形式で応答してください。
+
+例えば以下のようなJSON形式で返答します:
+{
+  "recommendations": [
+    {"name": "山崎12年", "description": "シングルモルトウイスキー", "reason": "和食との相性が良い"},
+    {"name": "獺祭", "description": "純米大吟醸", "reason": "魚料理に合う辛口の日本酒"},
+    {"name": "白ワイン", "description": "シャルドネ", "reason": "軽い前菜に最適"}
+  ]
+}`
         },
         {
           role: "user",
-          content: `次のメニューから、おすすめのドリンク3つを選び、名前、説明、おすすめ理由を日本語で提供してください。次の形式のJSONで返答してください：
-          {
-            "recommendations": [
-              {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
-              {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
-              {"name": "商品名", "description": "説明", "reason": "おすすめ理由"}
-            ]
-          }
-          
-          メニュー:
-          ${menuText}`
+          content: `次のメニューから、おすすめのドリンク3つを選び、名前、説明、おすすめ理由を日本語で提供してください。必ず以下の形式のJSONで返答してください：
+{
+  "recommendations": [
+    {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
+    {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
+    {"name": "商品名", "description": "説明", "reason": "おすすめ理由"}
+  ]
+}
+
+メニュー:
+${menuText}`
         }
       ],
       temperature: 0.7,
-      max_tokens: 1000
+      max_tokens: 1500,
+      response_format: { type: "json_object" }
     });
     
-    console.log("Deepseekレスポンス:", completion);
+    console.log("Deepseekレスポンス概要:", {
+      status: completion.choices?.[0]?.finish_reason,
+      contentLength: completion.choices?.[0]?.message?.content?.length || 0
+    });
     
     const responseText = completion.choices[0].message.content;
     if (!responseText) {
