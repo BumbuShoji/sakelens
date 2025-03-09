@@ -12,7 +12,7 @@ dotenv.config();
 
 // Express アプリケーションの初期化
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001; // デフォルト値を3001に変更
 
 // アップロードディレクトリの設定
 const UPLOAD_DIR = path.join(__dirname, '../uploads');

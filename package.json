@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "private": true,
     "scripts": {
-      "start": "react-scripts start",
+      "start": "PORT=3000 react-scripts start",
       "build": "react-scripts build",
       "server": "ts-node src/server.ts",
       "llm-service": "ts-node src/llm-services.ts",
@@ -45,5 +45,5 @@
         "last 1 safari version"
       ]
     },
-    "proxy": "http://localhost:5000"
+    "proxy": "http://localhost:3001"
   }
