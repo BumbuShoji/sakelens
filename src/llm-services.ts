@@ -17,8 +17,26 @@ interface RecommendResult {
   }[];
 }
 
+// Deepseek APIレスポンスの型定義
+interface DeepseekResponse {
+  choices?: Array<{
+    text?: string;
+  }>;
+}
+
 // 環境変数の読み込み
 dotenv.config();
+
+// APIキーの検証
+if (!process.env.GEMINI_API_KEY) {
+  console.error("エラー: GEMINI_API_KEYが設定されていません。.envファイルを確認してください。");
+  process.exit(1);
+}
+
+if (!process.env.DEEPSEEK_API_KEY) {
+  console.error("エラー: DEEPSEEK_API_KEYが設定されていません。.envファイルを確認してください。");
+  process.exit(1);
+}
 
 // LLMサービスの初期化
 const app = express();
@@ -26,6 +44,15 @@ const PORT = process.env.LLM_SERVICE_PORT || 3002;
 
 app.use(cors());
 app.use(express.json({limit: '50mb'}));
+
+// ヘルスチェックエンドポイント
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'ok',
+    service: 'llm-services',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // Gemini-2.0-flash OCR API
 app.post('/api/llm/ocr', async (req, res) => {
@@ -70,8 +97,8 @@ app.post('/api/llm/recommend', async (req, res) => {
 // Gemini-2.0-flashを使用したOCR処理関数
 async function processOcrWithGemini(imageBase64: string): Promise<OcrResult> {
   try {
-    // Initialize Gemini client using the API key from environment variables
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // APIキーが存在することは既に確認済みなので、Non-null assertion operatorを使用
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Base64文字列から適切なフォーマットに変換（data:image/jpeg;base64, プレフィックスを追加）
@@ -133,7 +160,7 @@ async function generateRecommendationsWithDeepseek(menuText: string): Promise<Re
       })
     });
     
-    const data = await response.json();
+    const data = await response.json() as DeepseekResponse;
     console.log("Deepseekレスポンス:", data);
     
     if (!data.choices || !data.choices[0] || !data.choices[0].text) {
