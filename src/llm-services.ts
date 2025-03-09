@@ -1,5 +1,6 @@
 // src/llm-service.ts
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import express from 'express';
@@ -37,6 +38,12 @@ if (!process.env.DEEPSEEK_API_KEY) {
   console.error("エラー: DEEPSEEK_API_KEYが設定されていません。.envファイルを確認してください。");
   process.exit(1);
 }
+
+// DeepSeek用のOpenAIクライアントを初期化
+const deepseekClient = new OpenAI({
+  baseURL: 'https://api.deepseek.com',
+  apiKey: process.env.DEEPSEEK_API_KEY
+});
 
 // LLMサービスの初期化
 const app = express();
@@ -136,42 +143,44 @@ async function generateRecommendationsWithDeepseek(menuText: string): Promise<Re
   try {
     console.log("メニューテキスト処理開始:", menuText.substring(0, 100) + "...");
     
-    const response = await fetch("https://api.deepseek.com/v1/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        prompt: `次のメニューから、おすすめのドリンク3つを選び、名前、説明、おすすめ理由を日本語で提供してください。次の形式のJSONで返答してください：
+    const completion = await deepseekClient.chat.completions.create({
+      model: "deepseek-chat",
+      messages: [
+        { 
+          role: "system", 
+          content: "あなたは日本語で応答するAIアシスタントです。提供されたメニューから最適なおすすめを提案します。" 
+        },
         {
-          "recommendations": [
-            {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
-            {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
-            {"name": "商品名", "description": "説明", "reason": "おすすめ理由"}
-          ]
+          role: "user",
+          content: `次のメニューから、おすすめのドリンク3つを選び、名前、説明、おすすめ理由を日本語で提供してください。次の形式のJSONで返答してください：
+          {
+            "recommendations": [
+              {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
+              {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
+              {"name": "商品名", "description": "説明", "reason": "おすすめ理由"}
+            ]
+          }
+          
+          メニュー:
+          ${menuText}`
         }
-        
-        メニュー:
-        ${menuText}`,
-        temperature: 0.7,
-        max_tokens: 1000
-      })
+      ],
+      temperature: 0.7,
+      max_tokens: 1000
     });
     
-    const data = await response.json() as DeepseekResponse;
-    console.log("Deepseekレスポンス:", data);
+    console.log("Deepseekレスポンス:", completion);
     
-    if (!data.choices || !data.choices[0] || !data.choices[0].text) {
+    const responseText = completion.choices[0].message.content;
+    if (!responseText) {
       throw new Error("Deepseek APIからの応答が無効です");
     }
     
     try {
-      const parsedResult = JSON.parse(data.choices[0].text);
+      const parsedResult = JSON.parse(responseText);
       return parsedResult;
     } catch (parseError) {
-      console.error("JSON解析エラー:", data.choices[0].text);
+      console.error("JSON解析エラー:", responseText);
       return {
         recommendations: [
           { 
