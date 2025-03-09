@@ -5,11 +5,11 @@
     "scripts": {
       "start": "react-scripts start",
       "build": "react-scripts build",
-      "test": "react-scripts test",
-      "eject": "react-scripts eject",
       "server": "ts-node src/server.ts",
       "llm-service": "ts-node src/llm-service.ts",
-      "dev": "concurrently \"npm run server\" \"npm run llm-service\" \"npm start\""
+      "dev": "concurrently \"npm run start\" \"npm run server\" \"npm run llm-service\"",
+      "test": "react-scripts test",
+      "eject": "react-scripts eject"
     },
     "dependencies": {
       "@google/generative-ai": "^0.2.1",
@@ -45,5 +45,5 @@
         "last 1 safari version"
       ]
     },
-    "proxy": "http://localhost:3000"
+    "proxy": "http://localhost:5000"
   }
