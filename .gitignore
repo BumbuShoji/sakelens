@@ -4,7 +4,8 @@ build
 
 # ignore the .env file
 .env
-package-lock.json
+# package-lock.json の行を削除または次のようにコメントアウト
+# package-lock.json
 
 # Ignore the public/uploads folder
 uploads/*
