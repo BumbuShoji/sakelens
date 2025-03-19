@@ -52,18 +52,15 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
     // ファイルパスを取得
     const filePath = req.file.path;
     
-    // OCR処理を実行
-    const ocrResult = await processOCR(filePath);
-
-    // おすすめを取得
-    const recommendations = await getRecommendations(ocrResult);
+    // OCR処理とおすすめの提案を一度に実行
+    const result = await processOcrAndGetRecommendations(filePath);
     
     // 一時ファイルの削除（セキュリティのため）
     fs.unlinkSync(filePath);
     
     // レスポンスのフォーマットを調整
     const formattedResult = {
-      items: recommendations.recommendations.map((item: RecommendationItem) => ({
+      items: result.recommendations.map((item: RecommendationItem) => ({
         name: item.name,
         description: item.description,
         reason: item.reason
@@ -89,6 +86,48 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
   }
 });
 
+// OCRとおすすめ取得を一度に行う関数
+async function processOcrAndGetRecommendations(imagePath: string): Promise<RecommendResult> {
+  try {
+    // 画像ファイルをBase64エンコード
+    const imageBuffer = fs.readFileSync(imagePath);
+    const base64Image = imageBuffer.toString('base64');
+    
+    // LLMサービスの統合APIへのリクエスト
+    const response = await axios.post(
+      process.env.LLM_OCR_RECOMMEND_API_URL || 'http://localhost:3002/api/llm/ocr-and-recommend',
+      {
+        image: base64Image
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    if (response.status !== 200) {
+      throw new Error('OCRとおすすめの処理に失敗しました');
+    }
+    
+    console.log("OCR・おすすめ処理結果:", response.data.text?.substring(0, 100) + "...");
+    
+    return {
+      recommendations: response.data.recommendations || []
+    };
+    
+  } catch (error) {
+    console.error('OCR・おすすめ処理エラー:', error);
+    // エラーの詳細を出力
+    if (error instanceof Error) {
+      console.error('エラーメッセージ:', error.message);
+      console.error('エラースタック:', error.stack);
+    }
+    throw new Error('OCRとおすすめの処理中にエラーが発生しました');
+  }
+}
+
+// 以下は残して置くが、新しい統合APIの方を優先して使用する
 // OCR処理関数
 async function processOCR(imagePath: string): Promise<string> {
   try {

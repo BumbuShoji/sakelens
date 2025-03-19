@@ -25,6 +25,16 @@ interface DeepseekResponse {
   }>;
 }
 
+// OCRとおすすめを同時に行った結果の型定義
+interface OcrAndRecommendResult {
+  text: string;
+  recommendations: {
+    name: string;
+    description: string;
+    reason: string;
+  }[];
+}
+
 // 環境変数の読み込み
 dotenv.config();
 
@@ -77,6 +87,26 @@ app.post('/api/llm/ocr', async (req, res) => {
     
   } catch (error) {
     console.error('OCRエラー:', error);
+    res.status(500).json({ error: '処理中にエラーが発生しました' });
+  }
+});
+
+// 新しいAPI: Geminiを使ってOCRとおすすめを一度に行う
+app.post('/api/llm/ocr-and-recommend', async (req, res) => {
+  try {
+    const { image } = req.body;
+    
+    if (!image) {
+      return res.status(400).json({ error: '画像が提供されていません' });
+    }
+    
+    // Gemini-2.0-flashを使用してOCRとおすすめを同時に処理
+    const result = await processOcrAndRecommendWithGemini(image);
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('OCR・おすすめ処理エラー:', error);
     res.status(500).json({ error: '処理中にエラーが発生しました' });
   }
 });
@@ -134,6 +164,75 @@ async function processOcrWithGemini(imageBase64: string): Promise<OcrResult> {
     return { text };
   } catch (error) {
     console.error("Gemini OCR処理エラー:", error);
+    throw error;
+  }
+}
+
+// Gemini-2.0-flashを使用したOCRとおすすめを一度に行う関数
+async function processOcrAndRecommendWithGemini(imageBase64: string): Promise<OcrAndRecommendResult> {
+  try {
+    // APIキーの検証は既に行っているのでNon-null assertion operatorを使用
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    // Base64文字列を適切なフォーマットに変換
+    const formattedImage = imageBase64.startsWith('data:') 
+      ? imageBase64 
+      : `data:image/jpeg;base64,${imageBase64}`;
+
+    // OCRとおすすめを同時に行うプロンプト
+    const prompt = `
+この画像にあるメニュー全体のテキストを抽出し、さらに含まれているドリンクの中からおすすめのドリンク3つを選んでください。
+
+必ず以下の形式のJSONで回答してください：
+{
+  "text": "ここに抽出されたメニューのテキスト全体を入れる",
+  "recommendations": [
+    {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
+    {"name": "商品名", "description": "説明", "reason": "おすすめ理由"},
+    {"name": "商品名", "description": "説明", "reason": "おすすめ理由"}
+  ]
+}
+`;
+
+    // 画像の準備
+    const imageParts = [{
+      inlineData: {
+        data: formattedImage.split(',')[1] || imageBase64,
+        mimeType: "image/jpeg"
+      }
+    }];
+
+    // Gemini APIの呼び出し
+    const result = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }, ...imageParts] }],
+      generationConfig: {
+        responseFormat: { responseType: "JSON" }
+      }
+    });
+    
+    const responseText = result.response.text();
+    console.log("Gemini OCR・おすすめ結果:", responseText.substring(0, 100) + "...");
+    
+    // JSONとしてパースして返す
+    try {
+      const parsedResult = JSON.parse(responseText) as OcrAndRecommendResult;
+      return parsedResult;
+    } catch (parseError) {
+      console.error("JSON解析エラー:", responseText);
+      return {
+        text: responseText,
+        recommendations: [
+          { 
+            name: "レスポンス解析エラー", 
+            description: "APIからの応答を解析できませんでした", 
+            reason: "技術的な問題が発生しました" 
+          }
+        ]
+      };
+    }
+  } catch (error) {
+    console.error("Gemini OCR・おすすめ処理エラー:", error);
     throw error;
   }
 }
