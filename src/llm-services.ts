@@ -173,7 +173,9 @@ async function processOcrAndRecommendWithGemini(imageBase64: string): Promise<Oc
   try {
     // APIキーの検証は既に行っているのでNon-null assertion operatorを使用
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-2.0-flash"
+    });
 
     // Base64文字列を適切なフォーマットに変換
     const formattedImage = imageBase64.startsWith('data:') 
@@ -203,13 +205,11 @@ async function processOcrAndRecommendWithGemini(imageBase64: string): Promise<Oc
       }
     }];
 
-    // Gemini APIの呼び出し
-    const result = await model.generateContent({
-      contents: [{ role: "user", parts: [{ text: prompt }, ...imageParts] }],
-      generationConfig: {
-        responseFormat: { responseType: "JSON" }
-      }
-    });
+    // Gemini APIの呼び出し - 修正済み
+    const result = await model.generateContent([
+      { text: prompt }, 
+      ...imageParts
+    ]);
     
     const responseText = result.response.text();
     console.log("Gemini OCR・おすすめ結果:", responseText.substring(0, 100) + "...");
