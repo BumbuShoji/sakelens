@@ -3,8 +3,8 @@ import './App.css';
 // src/App.tsx
 import React, { useEffect, useRef, useState } from 'react';
 
-// 正しい拡張子でインポート
-import config from './config.ts';
+// 正しい拡張子なしでインポート
+import config from './config';
 
 // 結果表示用の型定義
 interface RecommendationResult {

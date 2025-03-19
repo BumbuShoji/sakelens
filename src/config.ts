@@ -2,8 +2,8 @@
 
 const config = {
   // APIエンドポイント
-  apiUrl: process.env.REACT_APP_API_URL || '/api',
-  llmServiceUrl: process.env.REACT_APP_LLM_SERVICE_URL || 'http://localhost:3002',
+  apiUrl: import.meta.env.VITE_REACT_APP_API_URL || '/api',
+  llmServiceUrl: import.meta.env.VITE_REACT_APP_LLM_SERVICE_URL || 'http://localhost:3002',
   
   // OCR APIエンドポイント
   ocrApiEndpoint: '/api/llm/ocr',
