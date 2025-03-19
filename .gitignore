@@ -9,3 +9,8 @@ build
 
 # Ignore the public/uploads folder
 uploads/*
+
+# amplify
+.amplify
+amplify_outputs*
+amplifyconfiguration*
