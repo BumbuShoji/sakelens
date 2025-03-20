@@ -3,15 +3,16 @@ backend:
   phases:
     preBuild:
       commands:
-        - npm install -g @aws-amplify/cli
+        - npm install -g @aws-amplify/backend-cli
+        - npm install
     build:
       commands:
-        - amplify generate
-        - amplify push --yes
+        - npx ampx push --yes
   artifacts:
     baseDirectory: ./
     files:
       - amplify/**/*
+      - .amplify/**/*
 frontend:
   phases:
     preBuild:
