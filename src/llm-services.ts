@@ -57,7 +57,7 @@ const deepseekClient = new OpenAI({
 
 // LLMサービスの初期化
 const app = express();
-const PORT = process.env.LLM_SERVICE_PORT || 3002;
+const PORT = process.env.PORT || process.env.LLM_SERVICE_PORT || 3002;
 
 app.use(cors());
 app.use(express.json({limit: '50mb'}));
