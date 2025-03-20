@@ -310,9 +310,26 @@ ${menuText}`
   }
 }
 
+// 開発環境用のAPIキー取得関数
+const getApiKeys = () => {
+  // 開発環境ではプロセス環境変数からキーを取得する
+  // 注意: 実際の環境ではシークレットマネージャーなどを使用すべき
+  const geminiApiKey = process.env.GEMINI_API_KEY || '';
+  const deepseekApiKey = process.env.DEEPSEEK_API_KEY || '';
+  
+  if (!geminiApiKey || !deepseekApiKey) {
+    console.warn('APIキーが設定されていません。環境変数を確認してください。');
+    console.warn('開発環境では.envファイルを作成するか、環境変数を設定してください。');
+    console.warn('本番環境ではAmplifyのシークレット機能を使用します。');
+  }
+  
+  return { geminiApiKey, deepseekApiKey };
+};
+
 // サーバー起動
 app.listen(PORT, () => {
+  const keys = getApiKeys();
   console.log(`LLMサービスが起動しました: http://localhost:${PORT}`);
-  console.log(`Gemini API Key: ${process.env.GEMINI_API_KEY ? '設定済み' : '未設定'}`);
-  console.log(`Deepseek API Key: ${process.env.DEEPSEEK_API_KEY ? '設定済み' : '未設定'}`);
+  console.log(`Gemini API Key: ${keys.geminiApiKey ? '設定済み' : '未設定'}`);
+  console.log(`Deepseek API Key: ${keys.deepseekApiKey ? '設定済み' : '未設定'}`);
 });
