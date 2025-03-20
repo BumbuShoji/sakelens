@@ -1,4 +1,3 @@
-import { deepseekApiKey, geminiApiKey } from '../../parameters';
 import { defineFunction, secret } from '@aws-amplify/backend';
 
 export const llmService = defineFunction({
@@ -6,7 +5,9 @@ export const llmService = defineFunction({
   entry: './handler.ts',
   environment: {
     // シークレットを環境変数として安全に注入
-    GEMINI_API_KEY: geminiApiKey,
-    DEEPSEEK_API_KEY: deepseekApiKey
+    // これらのシークレットは事前にAmplifyコンソールで定義されているか、
+    // amplify/parameters.tsで定義されている必要があります
+    GEMINI_API_KEY: secret('GEMINI_API_KEY'),
+    DEEPSEEK_API_KEY: secret('DEEPSEEK_API_KEY')
   }
 });

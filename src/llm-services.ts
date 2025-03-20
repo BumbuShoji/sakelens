@@ -38,21 +38,24 @@ interface OcrAndRecommendResult {
 // 環境変数の読み込み
 dotenv.config();
 
-// APIキーの検証
-if (!process.env.GEMINI_API_KEY) {
-  console.error("エラー: GEMINI_API_KEYが設定されていません。.envファイルを確認してください。");
-  process.exit(1);
-}
+// APIキーを環境変数から取得
+// これらの環境変数はAWS Amplifyのデプロイプロセスによって、
+// secret()関数で定義されたシークレットから安全に注入される
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
 
-if (!process.env.DEEPSEEK_API_KEY) {
-  console.error("エラー: DEEPSEEK_API_KEYが設定されていません。.envファイルを確認してください。");
+// 開発環境でのAPIキー検証
+if (!GEMINI_API_KEY || !DEEPSEEK_API_KEY) {
+  console.error('APIキーが設定されていません。');
+  console.error('開発環境では.envファイルに設定するか、環境変数を設定してください。');
+  console.error('本番環境ではAmplifyのシークレット機能を使用します。');
   process.exit(1);
 }
 
 // DeepSeek用のOpenAIクライアントを初期化
 const deepseekClient = new OpenAI({
   baseURL: 'https://api.deepseek.com',
-  apiKey: process.env.DEEPSEEK_API_KEY
+  apiKey: DEEPSEEK_API_KEY
 });
 
 // LLMサービスの初期化
@@ -134,8 +137,8 @@ app.post('/api/llm/recommend', async (req, res) => {
 // Gemini-2.0-flashを使用したOCR処理関数
 async function processOcrWithGemini(imageBase64: string): Promise<OcrResult> {
   try {
-    // APIキーが存在することは既に確認済みなので、Non-null assertion operatorを使用
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    // 安全に取得したAPIキーを使用
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     // Base64文字列から適切なフォーマットに変換（data:image/jpeg;base64, プレフィックスを追加）
@@ -171,8 +174,8 @@ async function processOcrWithGemini(imageBase64: string): Promise<OcrResult> {
 // Gemini-2.0-flashを使用したOCRとおすすめを一度に行う関数
 async function processOcrAndRecommendWithGemini(imageBase64: string): Promise<OcrAndRecommendResult> {
   try {
-    // APIキーの検証は既に行っているのでNon-null assertion operatorを使用
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+    // 安全に取得したAPIキーを使用
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.0-flash"
     });
@@ -310,26 +313,18 @@ ${menuText}`
   }
 }
 
-// 開発環境用のAPIキー取得関数
-const getApiKeys = () => {
-  // 開発環境ではプロセス環境変数からキーを取得する
-  // 注意: 実際の環境ではシークレットマネージャーなどを使用すべき
-  const geminiApiKey = process.env.GEMINI_API_KEY || '';
-  const deepseekApiKey = process.env.DEEPSEEK_API_KEY || '';
-  
-  if (!geminiApiKey || !deepseekApiKey) {
-    console.warn('APIキーが設定されていません。環境変数を確認してください。');
-    console.warn('開発環境では.envファイルを作成するか、環境変数を設定してください。');
-    console.warn('本番環境ではAmplifyのシークレット機能を使用します。');
-  }
-  
-  return { geminiApiKey, deepseekApiKey };
+// 開発環境用のAPIキー取得状態確認関数
+const getApiKeyStatus = () => {
+  return { 
+    geminiApiKey: GEMINI_API_KEY ? '設定済み' : '未設定',
+    deepseekApiKey: DEEPSEEK_API_KEY ? '設定済み' : '未設定'
+  };
 };
 
 // サーバー起動
 app.listen(PORT, () => {
-  const keys = getApiKeys();
+  const keyStatus = getApiKeyStatus();
   console.log(`LLMサービスが起動しました: http://localhost:${PORT}`);
-  console.log(`Gemini API Key: ${keys.geminiApiKey ? '設定済み' : '未設定'}`);
-  console.log(`Deepseek API Key: ${keys.deepseekApiKey ? '設定済み' : '未設定'}`);
+  console.log(`Gemini API Key: ${keyStatus.geminiApiKey}`);
+  console.log(`Deepseek API Key: ${keyStatus.deepseekApiKey}`);
 });
