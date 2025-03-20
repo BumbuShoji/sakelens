@@ -8,6 +8,5 @@ import { defineBackend } from '@aws-amplify/backend';
 defineBackend({
   auth,
   data,
-  // シークレットを使用する場合はSSMシークレット設定に環境変数名を指定
-  // secretsReferences: ['GEMINI_API_KEY', 'DEEPSEEK_API_KEY']
+  // secretsReferencesは削除し、代わりに各リソースで直接secret関数を使用
 });
