@@ -1,4 +1,17 @@
 version: 1
+backend:
+  phases:
+    preBuild:
+      commands:
+        - npm install -g @aws-amplify/cli
+    build:
+      commands:
+        - amplify generate
+        - amplify push --yes
+  artifacts:
+    baseDirectory: ./
+    files:
+      - amplify/**/*
 frontend:
   phases:
     preBuild:
@@ -23,3 +36,6 @@ frontend:
       headers:
         - key: 'Cache-Control'
           value: 'public, max-age=0, must-revalidate'
+  environment:
+    variables:
+      NODE_VERSION: 18
