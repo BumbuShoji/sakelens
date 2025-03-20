@@ -4,9 +4,8 @@ backend:
     preBuild:
       commands:
         - export NODE_OPTIONS="--max_old_space_size=4096"
-        - nvm install 20.5.0
-        - nvm use 20.5.0
-        - node -v
+        - export NODE_VERSION=20.5.0
+        - n $NODE_VERSION
         - npm install -g @aws-amplify/backend-cli
         - npm install
     build:
@@ -21,7 +20,6 @@ frontend:
   phases:
     preBuild:
       commands:
-        - nvm use 20.5.0
         - npm install
     build:
       commands:

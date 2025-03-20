@@ -7,6 +7,5 @@ import { defineBackend } from '@aws-amplify/backend';
  */
 defineBackend({
   auth,
-  data,
-  // secretsReferencesは削除し、代わりに各リソースで直接secret関数を使用
+  data
 });
